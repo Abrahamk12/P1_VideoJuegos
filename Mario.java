@@ -41,11 +41,7 @@ public class Mario extends JLabel{
     }
 
     public void reiniciarPosicion(int posX){
-        if(this.getY() > 210){
-            setLocation(posX, 177);
-        }else if(this.getX() == 0){
-            setLocation(posX, 177);
-        }
+        setLocation(posX, 115);
     }
 
 }

@@ -27,6 +27,27 @@ public class SonidoP {
         }catch(Exception ex){}
     }//end play
 
+    public void playPausa(){
+        try{
+            clip.open(audioStream);
+            clip.loop(0);
+        }catch(Exception ex){}
+    }//end playjuego
+
+    public void marioDie(){
+        try{
+            clip.open(audioStream);
+            clip.loop(0);
+        }catch(Exception ex){}
+    }//end marioDie
+
+    public void finJ(){
+        try{
+            clip.open(audioStream);
+            clip.loop(0);
+        }catch(Exception ex){}
+    }//end finJuego
+
     public void pause(){
         microSegundos = clip.getMicrosecondPosition();
         clip.stop();

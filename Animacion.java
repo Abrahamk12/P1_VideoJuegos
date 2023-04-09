@@ -1,29 +1,33 @@
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import java.awt.event.*;
 import java.awt.geom.*;
 public class Animacion  extends JLabel implements Runnable, KeyListener{
     boolean startGame = false, derecha = true, bandera = true, pausar = false, stop = false,
-            walk = false, run = false, jump = false, finalNivel = false, colsionPM, colisionTP,
-            colisionCP, colisionTT = false, colisionCT = false;
-    int brincoS = 0, poder = 1, cPisos = 0;
+            walk = false, run = false, jump = false, finalNivel = false, colsionPM, colisionMT, colisionTP,
+            colisionCP, finJuego = false;
+    int brincoS = 0, poder = 1, cPisos = 0, cFM, vidas = 3, moverP = 0, rE = 0, nColision = 0;
+    
+    Piso piso;
+    Vidas vida;
+    Mario mario;
     Fondo fondo;
     SonidoP sonido;
-    private Mario mario;
-    private Piso [] pisos = new Piso[3];
+    JButton btnStart;
     Tortuga [] tortuga = new Tortuga[3];
     Tuberia [] tuberia = new Tuberia[3];
     Champiñon [] champiñon = new Champiñon[3];
     Thread tChamp, tTortuga;
 
-    int cFM, vidas = 3;
-
-    public Animacion(Mario mario, Piso [] pisos, Fondo fondo, Tortuga [] tortugas, Champiñon [] champiñon, Tuberia [] tuberias){
+    public Animacion(Mario mario, Piso piso, Fondo fondo, Tortuga [] tortugas, Champiñon [] champiñon, Tuberia [] tuberias, Vidas vida, JButton btnStart){
         sonido = new SonidoP("Sonido/mario1v2.wav");
+        this.piso = piso;
+        this.vida = vida;
         this.mario = mario;
-        this.pisos = pisos;
         this.fondo = fondo;
         this.tuberia = tuberias;
         this.tortuga = tortugas;
+        this.btnStart = btnStart;
         this.champiñon = champiñon;
     }
 
@@ -32,7 +36,6 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
         //Movimeinto de enemigos
         for(int i = 0; i < champiñon.length; i++){
             champiñon[i].rapidez = 1;
-            champiñon[i].derecha = colisionCT;
             tChamp  = new Thread(champiñon[i]);
             tChamp.start();
             tortuga[i].rapidez = 1;
@@ -40,11 +43,23 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
             tTortuga.start();
         }
         while(true){
-            if(vidas == 0){
-                break;
+            if((vidas == 0) || finJuego){
+                sonido.pause();
+                //control de tiempo de reproduccion
+                try{
+                    Thread.sleep(500);
+                    sonido.setSong("Sonido/smb_gameover.wav");
+                    sonido.finJ();
+                }catch(Exception ex){}
+                //control para cerrar la ventana
+                try{
+                    Thread.sleep(3000);
+                    System.exit(0);
+                }catch(Exception ex){}
             }
-            limiteInferior();
+            reaparecerPosiciones();
             colsion();
+            finN();
             try{
                 Thread.sleep(50);
                 if(walk){
@@ -72,17 +87,29 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
                     poder = 4;
                     brincarMario();
                 }
-                if(!jump && !colsionPM){
-                    this.mario.gravedad(50,2);
+                if(!jump && !colsionPM && !colisionMT){
+                    this.mario.gravedad(50,8);
                 }
                 
             }catch(Exception ex){}
+            try{
+                synchronized(this){
+                    while(pausar){
+                        wait();
+                    }
+                    if(stop){
+                        setLocation(5, 177);
+                        break;
+                    }
+                }// end synchronized
+            }catch(Exception ex){}//end try catch*/
+            
         }
 
     }//end run
     synchronized void pasuarHilo(){ pausar = true; }
     synchronized void reanudarHilo(){ pausar = false; notify(); }
-    synchronized void pararHilo(){ stop = true; pausar = false; notify(); }
+    synchronized void pararHilo(){ stop = true; pausar = false; notify(); btnStart.setEnabled(true);}
 
     @Override
     public void keyPressed(KeyEvent e) {
@@ -99,11 +126,15 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
             if(e.getKeyCode() == KeyEvent.VK_UP){ this.jump = true; }
             if(e.getKeyCode() == KeyEvent.VK_P){ 
                 if(bandera){
-                    sonido.resume();
+                    sonido.stopAlto();
+                    sonido.setSong("Sonido/smb_pause.wav");
+                    sonido.playPausa();
                     pasuarHilo();
                     bandera = false;
                 }else{
-                    sonido.pause();
+                    sonido.stopAlto();
+                    sonido.setSong("Sonido/mario1v2.wav");
+                    sonido.play();
                     reanudarHilo();
                     bandera = true;
                 }
@@ -135,81 +166,128 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
         return this.sonido;
     }
 
-    public void limiteInferior(){
-        if(this.mario.getY() > 300){
-            this.mario.reiniciarPosicion(this.mario.getX()-5);
-        }
-
-    }
-
     private void colsion(){
-        Area [] pisosA = new Area[pisos.length];
+        
         Area [] champsA = new Area[champiñon.length];
         Area [] tortugasA = new Area[tortuga.length];
         Area [] tuberiasA = new Area[tuberia.length];
-        Area marioA;
-        marioA = new Area(this.mario.getBounds());
-        for(int i = 0; i < pisos.length; i++){
-            pisosA[i] = new Area(pisos[i].getBounds());
+        Area pisosA = new Area(piso.getBounds());
+        Area marioA = new Area(this.mario.getBounds());
+        for(int i = 0; i < champiñon.length; i++){
             champsA[i] = new Area(champiñon[i].getBounds());
             tuberiasA[i] = new Area(tuberia[i].getBounds());
             tortugasA[i] = new Area(tortuga[i].getBounds());
         }
-        int i = 0;
-        if(i < pisos.length){
-            if(pisosA[i].intersects(marioA.getBounds2D())){
-                colsionPM = true;
+
+        if(pisosA.intersects(marioA.getBounds2D())){
+            colsionPM = true;
+        }else{
+            colsionPM =  false;
+        }
+        
+        if(nColision < champiñon.length){
+            if(tuberiasA[nColision].intersects(marioA.getBounds2D())){
+                colisionMT = true;
             }else{
-                colsionPM =  false;
+                colisionMT =  false;
             }
             //colsiiones champiñon
-            if(champsA[i].intersects(pisosA[i].getBounds2D())){
+            if(champsA[nColision].intersects(pisosA.getBounds2D())){
                 colisionCP = true;
             }else{
-                this.champiñon[i].gravedad(50, 4);
+                this.champiñon[nColision].gravedad(50, 4);
             }
-            if(champsA[i].intersects(marioA.getBounds2D())){
-                if(this.mario.getY() > this.champiñon[i].getAlignmentY()){
-                    this.champiñon[i].champiñonMuerto();
-                    this.champiñon[i].reiniciarPosicion();
-                }else{
-                    this.mario.reiniciarPosicion(this.mario.getX() - 2);
-                    vidas--;
-                }
+            if(champsA[nColision].intersects(marioA.getBounds2D())){
+                sonido.pause();
+                sonido.setSong("Sonido/smb_mariodie.wav");
+                sonido.marioDie();
+                this.mario.reiniciarPosicion(this.mario.getX());
+                vidas--;
+                vida.setVida(vidas);
+                //control de tiempo de reproduccion
+                try{
+                    Thread.sleep(2200);
+                    sonido.setSong("Sonido/mario1v2.wav");
+                    sonido.play();
+                }catch(Exception ex){}
             }
-            if(champsA[i].intersects(tuberiasA[i].getBounds2D())){
-                colisionCT = true;
+            if(champsA[nColision].intersects(tuberiasA[nColision].getBounds2D())){
+                champiñon[nColision].derecha = true;
+            }
+            if(champsA[nColision].intersects(tuberiasA[nColision].getBounds2D())){
+                champiñon[nColision].derecha = false;
             }
             //Colisiones tortuga
-            if(tortugasA[i].intersects(pisosA[i].getBounds2D())){
+            if(tortugasA[nColision].intersects(pisosA.getBounds2D())){
                 colisionTP = true;
             }else{
-                this.tortuga[i].gravedad(50, 4);
+                this.tortuga[nColision].gravedad(50, 4);
             }
-            if(tortugasA[i].intersects(marioA.getBounds2D())){
-                if(this.mario.getY() > this.tortuga[i].getAlignmentY()){
-                    this.tortuga[i].tortugaMuerta();
-                    this.tortuga[i].reiniciarPosicion();
-                }else{
-                    this.mario.reiniciarPosicion(this.mario.getX() - 2);
-                    vidas--;
+            if(tortugasA[nColision].intersects(marioA.getBounds2D())){
+                sonido.pause();
+                sonido.setSong("Sonido/smb_mariodie.wav");
+                sonido.marioDie();
+                this.mario.reiniciarPosicion(this.mario.getX());
+                vidas--;
+                vida.setVida(vidas);
+                //control de tiempo de reproduccion
+                try{
+                    Thread.sleep(2200);
+                    sonido.setSong("Sonido/mario1v2.wav");
+                    sonido.play();
+                }catch(Exception ex){}
+            }
+            if(tortuga[nColision].derecha == true){
+                if(tortugasA[nColision].intersects(tuberiasA[nColision].getBounds2D())){
+                    tortuga[nColision].derecha = false;
+                }
+            }else{
+                if(tortugasA[nColision].intersects(tuberiasA[nColision].getBounds2D())){
+                    tortuga[nColision].derecha = true;
                 }
             }
-            if(tortugasA[i].intersects(tuberiasA[i].getBounds2D())){
-                colisionTT = true;
-            }
-            i++;
+            nColision++;
         }else{
-            i = 0;
+            nColision = 0;
         }
+    
+    }
+
+    public void reaparecerPosiciones(){
+        int posxT = (int)(Math.random() * ((500 - 250) + 250)) + 250, 
+            ranPos = (int)(Math.random() * ((20 - 10) + 10)) + 10;
+        if(rE < champiñon.length){
+            if(champiñon[rE].getX() < -1){
+                champiñon[rE].reiniciarPosicion(ranPos);
+            }
+            if(tortuga[rE].getX() < -1){
+                tortuga[rE].reiniciarPosicion(ranPos);
+            }
+            if(tuberia[rE].getX() < -1){
+                tuberia[rE].reiniciarPosicion(posxT);
+            }
+            rE++;
+        }else{
+            rE = 0;
+        }
+    }
+
+    public void finN(){
+        //System.out.println(this.fondo.getX());
+        if(this.fondo.getX() == -2550){
+            finalNivel = true;
+        }
+
     }
     
     private void caminarMario(){
-        int moverP = 0;
         if(derecha){
             if(finalNivel){
                 this.mario.marioDerecha(cFM);
                 this.mario.setLocation(this.mario.getX() + poder, this.mario.getY());
+                if(this.mario.getX() > 450){
+                    finJuego = true;
+                }
             }else{
                 if(this.mario.getX() < 250){
                     this.mario.marioDerecha(cFM);
@@ -217,9 +295,10 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
                 }else{
                     this.mario.marioDerecha(cFM);
                     fondo.mover_fondo(poder);
-                    if(moverP < pisos.length){
+                    piso.mover_piso(poder);
+                    if(moverP < tuberia.length){
+                        tuberia[moverP].mover_tuberia(poder);
                         moverP++;
-                        pisos[moverP].mover_piso(poder);
                     }else{
                         moverP = 0;
                     }
@@ -248,7 +327,7 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
             
         }else{
             this.mario.marioBrincaIzquierda();
-            this.mario.setLocation(this.mario.getX() + poder, this.mario.getY());
+            this.mario.setLocation(this.mario.getX() - poder, this.mario.getY());
         }
     }
 }

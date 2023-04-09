@@ -13,10 +13,10 @@ public class Fondo extends JLabel{
         if(this.getX() != 110){
             icon = new ImageIcon(this.getClass().getResource(this.url));
             setIcon(icon);
-            setBounds(this.getX() - x, 0, 3373,240);
+            setLocation(this.getX() - x, 0);
         }
         //Movemos el fondo
-        setBounds(this.getX() - x, 0, 3373,240);
+        setLocation(this.getX() - x, 0);
     }
     public ImageIcon getIcon(){
         return this.icon;

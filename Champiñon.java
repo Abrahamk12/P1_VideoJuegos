@@ -42,8 +42,8 @@ public class Champiñon extends JLabel implements Runnable{
         setIcon(icon);
     }
 
-    public void reiniciarPosicion(){
-        setLocation(308, 191);
+    public void reiniciarPosicion(int posX){
+        setLocation(502 + posX, 188);
     }
 
     public void gravedad(int tiempo, int presion){
