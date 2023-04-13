@@ -51,6 +51,7 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
                 //control para cerrar la ventana
                 try{
                     Thread.sleep(3000);
+                    sonido.stopAlto();
                     pararHilo();
                 }catch(Exception ex){}
             }
@@ -66,6 +67,7 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
                     Thread.sleep(700);
                     reiniciar = false;
                     reiniciarTodo();
+                    finJuego = false;
                     break;
                 }catch(Exception ex){}
             }
@@ -123,12 +125,13 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
     synchronized void pasuarHilo(){ pausar = true; }
     synchronized void reanudarHilo(){ pausar = false; notify(); }
     synchronized void pararHilo(){ 
+        sonido.stopAlto();
         stop = true; 
         pausar = false; 
         reiniciar = false; 
         reiniciarTodo = true;
-        sonido.stopAlto();
         btnStart.setEnabled(true);
+        reiniciarTodo();
         notify(); 
     }
 
@@ -195,12 +198,12 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
             tuberia[i].setBounds(posXTu, 177, 30, 31);
             posXTu += 50;
         }
-        sonido.setSong("mario1v2.wav");
-        sonido.play();
+        sonido.setSong("Sonido/mario1v2.wav");
         posXTu = 210;
         posXP = 0;
         vidas = 3;
         vida.setVida(vidas);
+        btnStart.setEnabled(true);
         reiniciarTodo = false;
     }
 
@@ -275,7 +278,7 @@ public class Animacion  extends JLabel implements Runnable, KeyListener{
 
     public void finN(){
         //System.out.println(this.fondo.getX());
-        if(this.fondo.getX() == -2550){
+        if(this.fondo.getX() < -2400){
             finalNivel = true;
         }
 
