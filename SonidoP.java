@@ -5,6 +5,9 @@ public class SonidoP {
     private String ruta;
     private AudioInputStream audioStream;
     private Long microSegundos;
+
+    public SonidoP(){ }
+
     public SonidoP(String ruta){
         this.ruta = ruta;
         try{

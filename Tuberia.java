@@ -17,7 +17,8 @@ public class Tuberia extends JLabel{
         //Movemos el fondo
         setLocation(this.getX() - x, 177);
     }
-    public void reiniciarPosicion(int posX){
+    public void reiniciarPosicion(){
+        int posX = (int)(Math.random() * ((500 - 250) + 250)) + 250;
         setLocation(posX, 188);
     }
     public ImageIcon getIcon(){
